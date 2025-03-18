@@ -1,0 +1,12 @@
+origem,destino,distancia,litros,minutos
+A,B,10,5,4
+A,F,30,3,6
+B,C,5,2,5
+B,G,40,3,7
+C,H,30,10,2
+C,D,7,6,7
+D,E,4,3,7
+E,F,4,8,9
+E,H,20,5,10
+F,G,10,7,13
+G,H,5,2,14
