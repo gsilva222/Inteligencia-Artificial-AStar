@@ -1,86 +1,112 @@
 import csv
+import heapq
 
 class Graph:
-    def __init__(self, adjacency_list, cost_weights=(1, 1, 1)):
+    def __init__(self, adjacency_list, heuristics):
         self.adjacency_list = adjacency_list
-        self.cost_weights = cost_weights  # Pesos para cada fator: (kms, litros, minutos)
+        self.H = heuristics  # Heurísticas fornecidas
     
     def get_neighbors(self, v):
         return self.adjacency_list.get(v, [])
-    
-    def h(self, n):
-        # Heurística fictícia (pode ser aprimorada)
-        H = {node: 1 for node in self.adjacency_list}  
-        return H.get(n, 1)
-    
-    def weighted_cost(self, costs):
-        # Calcula o custo ponderado levando em conta os três fatores (kms, litros, minutos)
-        return sum(c * w for c, w in zip(costs, self.cost_weights))
-    
-    def a_star_algorithm(self, start_node, stop_node):
-        open_list = set([start_node])
-        closed_list = set([])
-        g = {start_node: 0}
-        parents = {start_node: start_node}
 
-        while open_list:
-            n = min(open_list, key=lambda v: g[v] + self.h(v))
+    def a_star(self, start_node, stop_node, cost_weights):
+        g = {node: float('inf') for node in self.adjacency_list}
+        f = {node: float('inf') for node in self.adjacency_list}
+        g[start_node] = 0
+        f[start_node] = self.H.get(start_node, 0)
 
-            if n == stop_node:
-                reconst_path = []
-                while parents[n] != n:
-                    reconst_path.append(n)
-                    n = parents[n]
-                reconst_path.append(start_node)
-                reconst_path.reverse()
-                return reconst_path
-
-            for (m, costs) in self.get_neighbors(n):
-                weight = self.weighted_cost(costs)  # Calcula o custo ponderado
-                
-                if m not in open_list and m not in closed_list:
-                    open_list.add(m)
-                    parents[m] = n
-                    g[m] = g[n] + weight
-                elif g[m] > g[n] + weight:
-                    g[m] = g[n] + weight
-                    parents[m] = n
-                    if m in closed_list:
-                        closed_list.remove(m)
-                        open_list.add(m)
-
-            open_list.remove(n)
-            closed_list.add(n)
+        open_list = []
+        heapq.heappush(open_list, (f[start_node], start_node))
+        came_from = {}
         
-        return None
+        while open_list:
+            _, current = heapq.heappop(open_list)
+            
+            if current == stop_node:
+                return self.reconstruct_path(came_from, current), self.calculate_path_cost(came_from, stop_node)
+            
+            for neighbor, costs in self.get_neighbors(current):
+                tentative_g = g[current] + sum(cost * weight for cost, weight in zip(costs, cost_weights))
+                
+                if tentative_g < g[neighbor]:
+                    came_from[neighbor] = (current, costs)
+                    g[neighbor] = tentative_g
+                    f[neighbor] = g[neighbor] + self.H.get(neighbor, 0)
+                    heapq.heappush(open_list, (f[neighbor], neighbor))
+        
+        return None, None
 
+    def reconstruct_path(self, came_from, current):
+        path = [current]
+        while current in came_from:
+            current = came_from[current][0]
+            path.append(current)
+        path.reverse()
+        return path
+    
+    def calculate_path_cost(self, came_from, destination):
+        total_costs = {"toll": 0, "fuel": 0, "distance": 0}
+        current = destination
+        while current in came_from:
+            prev, costs = came_from[current]
+            total_costs["toll"] += costs[0]
+            total_costs["fuel"] += costs[1]
+            total_costs["distance"] += costs[2]
+            current = prev
+        return total_costs
 
 def load_graph_from_csv(filename):
     adjacency_list = {}
-    with open(filename, newline='', encoding='utf-8') as csvfile:
-        reader = csv.reader(csvfile)
-        next(reader)  # Skip header row
-        for row in reader:
-            origem, destino = row[0], row[1]
-            custos = tuple(map(int, row[2:]))  # Converte os custos para inteiros
-            
-            if origem not in adjacency_list:
-                adjacency_list[origem] = []
-            if destino not in adjacency_list:
-                adjacency_list[destino] = []
+    try:
+        with open(filename, newline='', encoding='utf-8') as csvfile:
+            reader = csv.reader(csvfile)
+            next(reader)
+            for row in reader:
+                origem, destino = row[0], row[1]
+                custos = tuple(map(float, row[2:]))
                 
-            adjacency_list[origem].append((destino, custos))
-            adjacency_list[destino].append((origem, custos))  # Grafo bidirecional
-    
+                if origem not in adjacency_list:
+                    adjacency_list[origem] = []
+                if destino not in adjacency_list:
+                    adjacency_list[destino] = []
+                
+                adjacency_list[origem].append((destino, custos))
+                adjacency_list[destino].append((origem, custos))
+    except FileNotFoundError:
+        return None
     return adjacency_list
 
-
-filename = "CSVinventado.csv"
+filename = "cities_nodes_special.csv"
 adjacency_list = load_graph_from_csv(filename)
 
-# Aqui, você pode escolher os pesos para cada fator: (kms, litros, minutos)
-# Por exemplo, se você quiser priorizar 'litros', pode usar algo como (1, 2, 1)
-graph1 = Graph(adjacency_list, cost_weights=(1, 1, 1))  # Peso dos fatores
-path = graph1.a_star_algorithm('A', 'G')
+if adjacency_list:
+    heuristics = {node: 1 for node in adjacency_list}
+    graph = Graph(adjacency_list, heuristics)
+    
+    start_city = "Stockholm"
+    destination_city = "Seville"
 
-print(f"Path found:", path)
+    path_cheapest, costs_cheapest = graph.a_star(start_city, destination_city, cost_weights=(1, 0, 0))
+    path_fastest, costs_fastest = graph.a_star(start_city, destination_city, cost_weights=(0, 0, 1))
+    path_most_economic, costs_economic = graph.a_star(start_city, destination_city, cost_weights=(0, 1, 0))
+
+    print("\nCaminho mais barato (Menor custo de portagem):")
+    if path_cheapest:
+        print(" -> ".join(path_cheapest))
+        print(f"Total Portagem (€): {costs_cheapest['toll']:.2f} | Combustível (L): {costs_cheapest['fuel']:.2f} | Distância (km): {costs_cheapest['distance']:.2f}")
+    else:
+        print("Nenhum caminho encontrado.")
+    
+    print("\nCaminho mais rápido (Menor distância):")
+    if path_fastest:
+        print(" -> ".join(path_fastest))
+        print(f"Total Portagem (€): {costs_fastest['toll']:.2f} | Combustível (L): {costs_fastest['fuel']:.2f} | Distância (km): {costs_fastest['distance']:.2f}")
+    else:
+        print("Nenhum caminho encontrado.")
+    
+    print("\nCaminho mais econômico (Menor combustível gasto):")
+    if path_most_economic:
+        print(" -> ".join(path_most_economic))
+        print(f"Total Portagem (€): {costs_economic['toll']:.2f} | Combustível (L): {costs_economic['fuel']:.2f} | Distância (km): {costs_economic['distance']:.2f}")
+    else:
+        print("Nenhum caminho encontrado.")
