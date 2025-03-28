@@ -94,9 +94,9 @@ adjacency_list = load_graph_from_csv(filename)
 if adjacency_list:
     graph = Graph(adjacency_list)
 
-    # Definir pontos de origem e destino
-    start_city = "Stockholm"
-    destination_city = "Seville"
+    # Pedir ao utilizador as cidades de origem e destino
+    start_city = input("Digite a cidade de origem: ")
+    destination_city = input("Digite a cidade de destino: ")
 
     # Executar LRTA* para diferentes critérios
     path_cheapest, toll_cheapest, fuel_cheapest, distance_cheapest = graph.lrta_star(start_city, destination_city, cost_weights=(1, 0, 0))

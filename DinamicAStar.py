@@ -92,9 +92,9 @@ if adjacency_list:
     heuristics = {node: 1 for node in adjacency_list}  
     graph = Graph(adjacency_list, heuristics)
 
-    # Escolher pontos de partida e chegada
-    start_city = "Stockholm"
-    destination_city = "Seville"
+    # Pedir ao utilizador as cidades de origem e destino
+    start_city = input("Digite a cidade de origem: ")
+    destination_city = input("Digite a cidade de destino: ")
 
     # Executar A* para diferentes critérios
     result_cheapest = graph.a_star(start_city, destination_city, cost_weights=(1, 0, 0))

@@ -76,6 +76,7 @@ def load_graph_from_csv(filename):
         return None
     return adjacency_list
 
+# Carregar o grafo do CSV
 filename = "cities_nodes_special.csv"
 adjacency_list = load_graph_from_csv(filename)
 
@@ -83,30 +84,24 @@ if adjacency_list:
     heuristics = {node: 1 for node in adjacency_list}
     graph = Graph(adjacency_list, heuristics)
     
-    start_city = "Stockholm"
-    destination_city = "Seville"
+    # Pedir ao utilizador as cidades de origem e destino
+    start_city = input("Digite a cidade de origem: ")
+    destination_city = input("Digite a cidade de destino: ")
 
+    # Executar A* para diferentes critérios
     path_cheapest, costs_cheapest = graph.a_star(start_city, destination_city, cost_weights=(1, 0, 0))
     path_fastest, costs_fastest = graph.a_star(start_city, destination_city, cost_weights=(0, 0, 1))
     path_most_economic, costs_economic = graph.a_star(start_city, destination_city, cost_weights=(0, 1, 0))
 
-    print("\nCaminho mais barato (Menor custo de portagem):")
-    if path_cheapest:
-        print(" -> ".join(path_cheapest))
-        print(f"Total Portagem (€): {costs_cheapest['toll']:.2f} | Combustível (L): {costs_cheapest['fuel']:.2f} | Distância (km): {costs_cheapest['distance']:.2f}")
-    else:
-        print("Nenhum caminho encontrado.")
-    
-    print("\nCaminho mais rápido (Menor distância):")
-    if path_fastest:
-        print(" -> ".join(path_fastest))
-        print(f"Total Portagem (€): {costs_fastest['toll']:.2f} | Combustível (L): {costs_fastest['fuel']:.2f} | Distância (km): {costs_fastest['distance']:.2f}")
-    else:
-        print("Nenhum caminho encontrado.")
-    
-    print("\nCaminho mais econômico (Menor combustível gasto):")
-    if path_most_economic:
-        print(" -> ".join(path_most_economic))
-        print(f"Total Portagem (€): {costs_economic['toll']:.2f} | Combustível (L): {costs_economic['fuel']:.2f} | Distância (km): {costs_economic['distance']:.2f}")
-    else:
-        print("Nenhum caminho encontrado.")
+    # Exibir os resultados
+    def print_result(title, path, costs):
+        print(f"\n{title}:")
+        if path:
+            print(" -> ".join(path))
+            print(f"Total Portagem (€): {costs['toll']:.2f} | Combustível (L): {costs['fuel']:.2f} | Distância (km): {costs['distance']:.2f}")
+        else:
+            print("Nenhum caminho encontrado.")
+
+    print_result("Caminho mais barato (Menor custo de portagem)", path_cheapest, costs_cheapest)
+    print_result("Caminho mais rápido (Menor distância)", path_fastest, costs_fastest)
+    print_result("Caminho mais econômico (Menor combustível gasto)", path_most_economic, costs_economic)
