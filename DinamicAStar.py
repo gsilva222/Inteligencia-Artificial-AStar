@@ -2,115 +2,86 @@ import csv
 import heapq
 
 class Graph:
-    def __init__(self, adjacency_list, heuristics):
+    def __init__(self, adjacency_list, heuristics, cost_weights=(1, 1, 1)):
         self.adjacency_list = adjacency_list
-        self.H = heuristics  # Heurísticas fixas fornecidas
-    
+        self.H = heuristics
+        self.cost_weights = cost_weights
+
     def get_neighbors(self, v):
         return self.adjacency_list.get(v, [])
 
-    def a_star(self, start_node, stop_node, cost_weights):
-        """Executa o A* com diferentes pesos para cada critério."""
-        g = {node: float('inf') for node in self.adjacency_list}  # Custo acumulado g(n)
-        f = {node: float('inf') for node in self.adjacency_list}  # f(n) = g(n) + h(n)
-        g[start_node] = 0  # Inicializa o custo do nó de partida
-        f[start_node] = self.H.get(start_node, 0)  # Inicializa f(n)
+    def dynamic_a_star_top10(self, start_node, stop_node):
+        paths_found = []
+        open_list = [(self.H[start_node], 0, [start_node], 0, 0, 0)]  # (f, g, path, total_toll, total_fuel, total_distance)
 
-        open_list = []
-        heapq.heappush(open_list, (f[start_node], start_node))  # Prioridade é f(n)
-        came_from = {}  # Para reconstruir o caminho
+        while open_list and len(paths_found) < 10:
+            open_list.sort()
+            f, g, path, total_toll, total_fuel, total_distance = open_list.pop(0)
+            current = path[-1]
 
-        while open_list:
-            _, current = heapq.heappop(open_list)  # Nós com menor f(n) são explorados primeiro
-            
             if current == stop_node:
-                return self.reconstruct_path(came_from, current)
+                paths_found.append((path, total_toll, total_fuel, total_distance))
+                continue
 
-            neighbors = self.get_neighbors(current)
-            for neighbor, costs in neighbors:
-                # Calcula g(n) como o custo acumulado até o nó vizinho
-                tentative_g = g[current] + sum(cost * weight for cost, weight in zip(costs, cost_weights))
-                
-                if tentative_g < g[neighbor]:
-                    came_from[neighbor] = (current, costs)  # Armazena o nó anterior e os custos
-                    g[neighbor] = tentative_g
-                    f[neighbor] = g[neighbor] + self.H.get(neighbor, 0)  # f(n) = g(n) + h(n)
+            for neighbor, costs in self.get_neighbors(current):
+                if neighbor not in path:
+                    new_g = g + sum(c * w for c, w in zip(costs, self.cost_weights))
+                    new_f = new_g + self.H.get(neighbor, 0)
+                    open_list.append((new_f, new_g, path + [neighbor],
+                                      total_toll + costs[0], total_fuel + costs[1], total_distance + costs[2]))
 
-                    if neighbor not in [n[1] for n in open_list]:  # Se o vizinho não está na open_list
-                        heapq.heappush(open_list, (f[neighbor], neighbor))
-        
-        return None  # Se não encontrar um caminho
+        return paths_found
 
-    def reconstruct_path(self, came_from, current):
-        """Reconstrói o caminho a partir do dicionário de pais e calcula os custos."""
-        path = [current]
-        total_toll, total_fuel, total_distance = 0, 0, 0  # Resetando os custos
-
-        while current in came_from:
-            prev, costs = came_from[current]
-            path.append(prev)
-
-            # Acumulando os custos reais
-            total_toll += costs[0]
-            total_fuel += costs[1]
-            total_distance += costs[2]
-
-            current = prev
-
-        path.reverse()  # Reverte para o caminho correto
-        return path, total_toll, total_fuel, total_distance
 
 def load_graph_from_csv(filename):
-    """Carrega o grafo do CSV e trata erros."""
     adjacency_list = {}
-    try:
-        with open(filename, newline='', encoding='utf-8') as csvfile:
-            reader = csv.reader(csvfile)
-            next(reader)  # Pula o cabeçalho
-            for row in reader:
-                origem, destino = row[0], row[1]
-                custos = tuple(map(float, row[2:]))  # Converte os custos para float
-                
-                if origem not in adjacency_list:
-                    adjacency_list[origem] = []
-                if destino not in adjacency_list:
-                    adjacency_list[destino] = []
-                    
-                adjacency_list[origem].append((destino, custos))
-                adjacency_list[destino].append((origem, custos))  # Grafo bidirecional
-    except FileNotFoundError:
-        print(f"Erro: Arquivo '{filename}' não encontrado.")
-        return None
+    with open(filename, newline='', encoding='utf-8') as csvfile:
+        reader = csv.reader(csvfile)
+        next(reader)
+        for row in reader:
+            origem, destino = row[0], row[1]
+            custos = tuple(map(float, row[2:]))
+
+            if origem not in adjacency_list:
+                adjacency_list[origem] = []
+            if destino not in adjacency_list:
+                adjacency_list[destino] = []
+
+            adjacency_list[origem].append((destino, custos))
+            adjacency_list[destino].append((origem, custos))
+
     return adjacency_list
 
-# Carregar o grafo do CSV
+
+def mostrar_caminhos(paths):
+    for idx, (path, toll, fuel, distance) in enumerate(paths, start=1):
+        print(f"\nTop {idx} caminho encontrado:")
+        print(f"  Caminho: {' -> '.join(path)}")
+        print(f"  Total Portagem (€): {toll:.2f}")
+        print(f"  Total Combustível (litros): {fuel:.2f}")
+        print(f"  Total Distância (km): {distance:.2f}")
+
+
 filename = "cities_nodes_special.csv"
 adjacency_list = load_graph_from_csv(filename)
 
+heuristics = {node: 1 for node in adjacency_list}
+
 if adjacency_list:
-    # Definição de heurísticas arbitrárias (poderia ser baseado na distância ao destino)
-    heuristics = {node: 1 for node in adjacency_list}  
-    graph = Graph(adjacency_list, heuristics)
+    graph = Graph(adjacency_list, heuristics, cost_weights=(1, 2, 1))
 
-    # Pedir ao utilizador as cidades de origem e destino
-    start_city = input("Digite a cidade de origem: ")
-    destination_city = input("Digite a cidade de destino: ")
+    start_city = input("Insira a cidade inicial: ")
+    while start_city not in adjacency_list:
+        print("Cidade inicial não encontrada. Tente novamente.")
+        start_city = input("Insira a cidade inicial: ")
 
-    # Executar A* para diferentes critérios
-    result_cheapest = graph.a_star(start_city, destination_city, cost_weights=(1, 0, 0))
-    result_fastest = graph.a_star(start_city, destination_city, cost_weights=(0, 0, 1))
-    result_most_economic = graph.a_star(start_city, destination_city, cost_weights=(0, 1, 0))
+    destination_city = input("Insira a cidade de destino: ")
+    while destination_city not in adjacency_list:
+        print("Cidade de destino não encontrada. Tente novamente.")
+        destination_city = input("Insira a cidade de destino: ")
 
-    # Exibir os resultados
-    def print_result(title, result):
-        print(f"\n{title}:")
-        if result:
-            path, toll, fuel, distance = result
-            print(" -> ".join(path))
-            print(f"Total Portagem (€): {toll:.2f} | Combustível (L): {fuel:.2f} | Distância (km): {distance:.2f}")
-        else:
-            print("Nenhum caminho encontrado.")
+    top_10_paths = graph.dynamic_a_star_top10(start_city, destination_city)
 
-    print_result("Caminho mais barato (Menor custo de portagem)", result_cheapest)
-    print_result("Caminho mais rápido (Menor distância)", result_fastest)
-    print_result("Caminho mais econômico (Menor combustível gasto)", result_most_economic)
+    mostrar_caminhos(top_10_paths)
+else:
+    print("Erro ao carregar o grafo.")
