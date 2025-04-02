@@ -1,7 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from CODIGOparacsv import Graph, load_graph_from_csv
-
+from LRTA import Graph as LRTA_Graph, load_graph_from_csv as load_graph_lrta
+from DinamicAStar import Graph as DStar_Graph, load_graph_from_csv as load_graph_dstar
+import heapq
 
 class App:
     def __init__(self, root):
@@ -58,9 +60,20 @@ class App:
 
         if alg == "A*":
             paths = graph.find_top_paths(start, end)
+
+        elif alg == "LRTA*":
+            graph = LRTA_Graph(graph_data)
+            paths = graph.find_top_paths(start, end)
+
+        elif alg == "D*":
+            graph = DStar_Graph(graph_data)
+            paths = graph.find_top_paths(start, end)
+
         else:
             self.result_box.insert(tk.END, f"Algoritmo {alg} ainda não está implementado.\n")
             return
+
+
 
         if not paths:
             self.result_box.insert(tk.END, "Nenhum caminho encontrado.\n")
