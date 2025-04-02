@@ -171,40 +171,41 @@ def load_graph_from_csv(filename):
         return None
     return adjacency_list
 
-def main():
-    filename = "cities_nodes_special.csv"
-    graph_data = load_graph_from_csv(filename)
-    
-    if not graph_data:
-        return
-    
-    graph = Graph(graph_data)
-    
-    print("Sistema de Planeamento de Rotas com Dynamic A* (D*)")
-    print("Valores exatos do CSV serão usados\n")
-    
-    start = input("Cidade de origem: ").strip()
-    end = input("Cidade de destino: ").strip()
-    
-    if start not in graph_data or end not in graph_data:
-        print("Erro: Uma ou ambas as cidades não existem no grafo.")
-        return
-    
-    print(f"\nCalculando os melhores caminhos de {start} para {end}...")
-    
-    paths = graph.find_top_paths(start, end)
-    
-    if not paths:
-        print("Nenhum caminho encontrado.")
-        return
-    
-    print("\nTop melhores caminhos encontrados:")
-    for i, (path, toll, fuel, dist) in enumerate(paths, 1):
-        print(f"\n--- Caminho #{i} ---")
-        print(" → ".join(path))
-        print(f"Distância total: {dist:.2f} km")
-        print(f"Portagem total: €{toll:.2f}")
-        print(f"Combustível total: {fuel:.2f} litros")
 
-if __name__ == "__main__":
-    main()
+#def main():
+#    filename = "cities_nodes_special.csv"
+#    graph_data = load_graph_from_csv(filename)
+    
+#    if not graph_data:
+#        return
+    
+#    graph = Graph(graph_data)
+    
+#    print("Sistema de Planeamento de Rotas com Dynamic A* (D*)")
+#    print("Valores exatos do CSV serão usados\n")
+    
+#    start = input("Cidade de origem: ").strip()
+#    end = input("Cidade de destino: ").strip()
+    
+#    if start not in graph_data or end not in graph_data:
+#        print("Erro: Uma ou ambas as cidades não existem no grafo.")
+#        return
+    
+#    print(f"\nCalculando os melhores caminhos de {start} para {end}...")
+    
+#    paths = graph.find_top_paths(start, end)
+    
+#    if not paths:
+#        print("Nenhum caminho encontrado.")
+#        return
+    
+#    print("\nTop melhores caminhos encontrados:")
+#    for i, (path, toll, fuel, dist) in enumerate(paths, 1):
+#        print(f"\n--- Caminho #{i} ---")
+#        print(" → ".join(path))
+#        print(f"Distância total: {dist:.2f} km")
+#        print(f"Portagem total: €{toll:.2f}")
+#        print(f"Combustível total: {fuel:.2f} litros")
+
+#if __name__ == "__main__":
+#    main()
