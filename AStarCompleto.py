@@ -25,7 +25,7 @@ class Graph:
                     n = parents[n]
                 reconst_path.append(start_node)
                 reconst_path.reverse()
-                return reconst_path  # Retorna o caminho encontrado
+                return reconst_path
 
             for (m, weight) in self.get_neighbors(n):
                 if m not in open_list and m not in closed_list:
@@ -42,7 +42,7 @@ class Graph:
             open_list.remove(n)
             closed_list.add(n)
         
-        return None  # Se nenhum caminho for encontrado
+        return None
 
 # Definição do grafo
 adjacency_list = {
